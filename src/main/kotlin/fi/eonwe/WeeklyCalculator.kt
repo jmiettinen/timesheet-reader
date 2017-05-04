@@ -89,7 +89,7 @@ fun calculateBalance(input: InputStream, inputName: String, durationName: String
             }
         }
         if (weekSum < minWeekly) {
-            println("Week starting from $weekStart has $${prettyHours(weekSum)} worked hours (less than alert level ${prettyHours(minWeekly)})")
+            println("Week starting from $weekStart has ${prettyHours(weekSum)} worked hours (less than alert level ${prettyHours(minWeekly)})")
         }
         for (day in map.keys.sorted()) {
             val sum = map[day]!!
