@@ -1,4 +1,4 @@
-A tool to compute current time balance from Excel exports from [Timesheet.](https://play.google.com/store/apps/details?id=com.rauscha.apps.timesheet).
+A tool to compute current time balance from Excel exports from [Timesheet](https://play.google.com/store/apps/details?id=com.rauscha.apps.timesheet).
 
 Usage
 ```

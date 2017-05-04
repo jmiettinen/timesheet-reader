@@ -19,6 +19,10 @@ fun main(args: Array<String>) {
         print(e)
         return
     }
+    if (settings.showHelp) {
+        jc.usage()
+        System.exit(1)
+    }
     var failure = false
     if (settings.hoursPerWeek < 0) {
         print("Working hours per week must be >= 0. Was ${settings.hoursPerWeek}")
@@ -32,12 +36,12 @@ fun main(args: Array<String>) {
         print("Minimum hours per week must be >= 0. Was ${settings.weeklyHoursAlert}")
         failure = true
     }
-    var durationField = settings.durationField
+    val durationField = settings.durationField
     if (durationField == null) {
         println("Must give a duration column")
         failure = true
     }
-    var dateField = settings.dateField
+    val dateField = settings.dateField
     if (dateField == null) {
         println("Must give a date column")
         failure = true
@@ -61,7 +65,7 @@ fun main(args: Array<String>) {
     }
     if (failure) {
         jc.usage()
-        System.exit(1)
+        System.exit(2)
     }
     if (settings.printDebug) {
         Common.logger.level = Level.FINEST
@@ -71,9 +75,16 @@ fun main(args: Array<String>) {
     files.forEach { pair ->
         pair.second!!.use {
             BufferedInputStream(it).use {
-                val result = calculateBalance(it, pair.first, durationName = durationField!!, dateName = dateField!!, expectedPerWeek = settings.hoursPerWeek)
+                val result = calculateBalance(
+                        input = it,
+                        inputName = pair.first,
+                        durationName = durationField!!,
+                        dateName = dateField!!,
+                        expectedPerWeek = settings.hoursPerWeek,
+                        minDaily = settings.dailyHoursAlert,
+                        minWeekly = settings.weeklyHoursAlert)
                 println("File: ${result.input}")
-                println("Balance: ${result.balance}")
+                println("Balance: ${prettyHours(result.balance)}")
             }
         }
     }
@@ -84,11 +95,11 @@ class CmdLineSettings {
     @Parameter(names = arrayOf("--hours", "-H"), description="Hours per week")
     @JvmField var hoursPerWeek: Double = 40.0
 
-    @Parameter(names = arrayOf("--min-daily-hours", "-d"), description = "Minimum hours per day to alert (IGNORED CURRENTLY)")
+    @Parameter(names = arrayOf("--min-daily-hours", "-d"), description = "Minimum hours per day to alert")
     @JvmField var dailyHoursAlert: Double = 0.0
 
 
-    @Parameter(names = arrayOf("--min-weekly-hours", "-m"), description = "Minimum hours per week to alert (IGNORED CURRENTLY)")
+    @Parameter(names = arrayOf("--min-weekly-hours", "-m"), description = "Minimum hours per week to alert")
     @JvmField var weeklyHoursAlert: Double = 0.0
 
     @Parameter(names = arrayOf("--duration-column", "-D"), description = "Name of the duration column")
@@ -99,6 +110,9 @@ class CmdLineSettings {
 
     @Parameter(names = arrayOf("--debug"), description = "Debug to stdout")
     @JvmField var printDebug: Boolean = false
+
+    @Parameter(names = arrayOf("--help", "-h"), description = "Show help")
+    @JvmField var showHelp: Boolean = false
 
     @Parameter
     @JvmField var rest: List<String> = arrayListOf()

@@ -6,17 +6,23 @@ import org.apache.poi.ss.usermodel.CellType
 import java.io.InputStream
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import java.time.temporal.WeekFields
+import java.util.Locale
 
 data class WeeklyReport(val input: String, val balance: Double, val skippedRows: Int)
 
-fun dateToStartOfTheWeek(date: LocalDate, startDate: DayOfWeek = DayOfWeek.MONDAY): LocalDate {
-    if (date.dayOfWeek == startDate) return date
-    return date.with(startDate)
+fun dateToStartOfTheWeek(date: LocalDate): LocalDate {
+    val wf = WeekFields.of(Locale.getDefault()).dayOfWeek()
+    return date.with(wf, 1)
 }
 
-fun calculateBalance(input: InputStream, inputName: String, durationName: String, dateName: String, expectedPerWeek: Double): WeeklyReport {
+fun prettyHours(hours: Double, decimals: Int = 2): String {
+    val effectiveDecimals = if (decimals < 0) 0 else decimals
+    val template = "%.${effectiveDecimals}f"
+    return template.format(hours)
+}
+
+fun calculateBalance(input: InputStream, inputName: String, durationName: String, dateName: String, expectedPerWeek: Double, minDaily: Double, minWeekly: Double): WeeklyReport {
     var balance = 0.0
 
     var foundAny = false
@@ -73,11 +79,23 @@ fun calculateBalance(input: InputStream, inputName: String, durationName: String
     if (!foundAny) {
         logger.warning("Did not find any columns with names $durationName, $dateName in $inputName")
     }
-    for ((weekStart, map) in resultMap) {
-        val diff = map.values.sum() - expectedPerWeek
+    for (weekStart in resultMap.keys.sorted()) {
+        val map = resultMap[weekStart]!!
+        val weekSum = map.values.sum()
+        val diff = weekSum - expectedPerWeek
         if (diff < 0) {
             logger.info {
                 "Week starting from $weekStart is $diff under expected amount"
+            }
+        }
+        if (weekSum < minWeekly) {
+            println("Week starting from $weekStart has $${prettyHours(weekSum)} worked hours (less than alert level ${prettyHours(minWeekly)})")
+        }
+        for (day in map.keys.sorted()) {
+            val sum = map[day]!!
+            if (sum < minDaily && (day.dayOfWeek != DayOfWeek.SATURDAY && day.dayOfWeek != DayOfWeek.SUNDAY)) {
+                // Just assume the workdays here
+                println("Day $day has ${prettyHours(sum)} worked hours (less than alert level ${prettyHours(minDaily)})")
             }
         }
         balance += diff
