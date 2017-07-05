@@ -9,7 +9,7 @@ import java.time.LocalDate
 import java.time.temporal.WeekFields
 import java.util.Locale
 
-data class WeeklyReport(val input: String, val balance: Double, val skippedRows: Int)
+data class WeeklyReport(val input: String, val balance: Double, val skippedRows: Int, val daysPerWeek: Map<LocalDate, Map<LocalDate, Double>>)
 
 fun dateToStartOfTheWeek(date: LocalDate): LocalDate {
     val wf = WeekFields.of(Locale.getDefault()).dayOfWeek()
@@ -82,6 +82,9 @@ fun calculateBalance(input: InputStream, inputName: String, durationName: String
     for (weekStart in resultMap.keys.sorted()) {
         val map = resultMap[weekStart]!!
         val weekSum = map.values.sum()
+        if (weekSum > Common.maxHoursPerWeek) {
+            logger.warning { "Week starting from $weekStart is unexpectedly large ($weekSum)" }
+        }
         val diff = weekSum - expectedPerWeek
         if (diff < 0) {
             logger.info {
@@ -101,7 +104,7 @@ fun calculateBalance(input: InputStream, inputName: String, durationName: String
         balance += diff
     }
 
-    return WeeklyReport(inputName, balance, skippedRows)
+    return WeeklyReport(inputName, balance, skippedRows, mapOf())
 }
 
 fun fetchDurationAndDate(row: HSSFRow, dateIndex: Int, durationIndex: Int, inputName: String, sheetIndex: Int): Pair<LocalDate, Double>? {
