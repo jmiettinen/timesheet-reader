@@ -22,7 +22,7 @@ fun prettyHours(hours: Double, decimals: Int = 2): String {
     return template.format(hours)
 }
 
-fun calculateBalance(input: InputStream, inputName: String, durationName: String, dateName: String, expectedPerWeek: Double, minDaily: Double, minWeekly: Double): WeeklyReport {
+fun calculateBalance(input: InputStream, inputName: String, durationName: String, dateName: String, expectedPerWeek: Double, minDaily: Double, minWeekly: Double, minYear: Int): WeeklyReport {
     var balance = 0.0
 
     var foundAny = false
@@ -59,7 +59,7 @@ fun calculateBalance(input: InputStream, inputName: String, durationName: String
             val durationIndex = durationIndexMaybe
             for (r: Int in (1..rowCount - 1)) {
                 val row = sheet.getRow(r) ?: continue
-                val data = fetchDurationAndDate(row, dateIndex, durationIndex, inputName, sheetIndex)
+                val data = fetchDurationAndDate(row, dateIndex, durationIndex, inputName, sheetIndex, minYear)
                 if (data != null) {
                     val startOfWeek = dateToStartOfTheWeek(data.first)
                     var existingMap = resultMap[startOfWeek]
@@ -107,7 +107,7 @@ fun calculateBalance(input: InputStream, inputName: String, durationName: String
     return WeeklyReport(inputName, balance, skippedRows, mapOf())
 }
 
-fun fetchDurationAndDate(row: HSSFRow, dateIndex: Int, durationIndex: Int, inputName: String, sheetIndex: Int): Pair<LocalDate, Double>? {
+fun fetchDurationAndDate(row: HSSFRow, dateIndex: Int, durationIndex: Int, inputName: String, sheetIndex: Int, minYear: Int): Pair<LocalDate, Double>? {
     val dateCell = row.getCell(dateIndex)
     val durationCell = row.getCell(durationIndex)
     val contextStart = { "Workbook $inputName, sheet $sheetIndex, row ${row.rowNum}" }
@@ -128,6 +128,10 @@ fun fetchDurationAndDate(row: HSSFRow, dateIndex: Int, durationIndex: Int, input
         val month = oldDate.month + 1
         val day = oldDate.date
         date = LocalDate.of(year, month, day)
+        if (date.year < minYear) {
+            log.info { "Odd date ${date.toString()} encountered, will be ignored"}
+            return null
+        }
     } else {
         log.info { "${contextStart.invoke()} cell type of date column is ${dateCell.cellTypeEnum}" }
         return null

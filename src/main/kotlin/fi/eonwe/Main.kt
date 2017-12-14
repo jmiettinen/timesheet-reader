@@ -82,7 +82,8 @@ fun main(args: Array<String>) {
                         dateName = dateField!!,
                         expectedPerWeek = settings.hoursPerWeek,
                         minDaily = settings.dailyHoursAlert,
-                        minWeekly = settings.weeklyHoursAlert)
+                        minWeekly = settings.weeklyHoursAlert,
+                        minYear = settings.minYear)
                 println("File: ${result.input}")
                 println("Balance: ${prettyHours(result.balance)}")
             }
@@ -113,6 +114,9 @@ class CmdLineSettings {
 
     @Parameter(names = arrayOf("--help", "-h"), description = "Show help")
     @JvmField var showHelp: Boolean = false
+
+    @Parameter(names = arrayOf("--min-year", "-y"), description = "Minimum year to accept")
+    @JvmField var minYear: Int = 2000
 
     @Parameter
     @JvmField var rest: List<String> = arrayListOf()
