@@ -88,7 +88,7 @@ fun calculateBalance(input: InputStream, inputName: String, durationName: String
         val diff = weekSum - expectedPerWeek
         if (diff < 0) {
             logger.info {
-                "Week starting from $weekStart is $diff under expected amount"
+                "Week starting from $weekStart is ${prettyHours(diff)} under expected amount"
             }
         }
         if (weekSum < minWeekly) {
