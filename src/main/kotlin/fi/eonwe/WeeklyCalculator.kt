@@ -6,6 +6,7 @@ import org.apache.poi.ss.usermodel.CellType
 import java.io.InputStream
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.temporal.WeekFields
 import java.util.Locale
 
@@ -30,7 +31,7 @@ fun calculateBalance(input: InputStream, inputName: String, durationName: String
     val workbook = HSSFWorkbook(input)
     val resultMap = mutableMapOf<LocalDate, MutableMap<LocalDate, Double>>()
     var skippedRows = 0
-    for (sheetIndex: Int in (0..workbook.numberOfSheets - 1)) {
+    for (sheetIndex: Int in (0 until workbook.numberOfSheets)) {
         val sheet = workbook.getSheetAt(sheetIndex)
         val rowCount = sheet.physicalNumberOfRows
         if (rowCount > 0) {
@@ -38,9 +39,9 @@ fun calculateBalance(input: InputStream, inputName: String, durationName: String
             // Assume this is the header row
             var durationIndexMaybe: Int? = null
             var dateIndexMaybe: Int? = null
-            for (c: Int in (0..firstRow.lastCellNum - 1)) {
+            for (c: Int in (0 until firstRow.lastCellNum)) {
                 val cell = firstRow.getCell(c)
-                if (cell?.cellTypeEnum == CellType.STRING) {
+                if (cell?.cellType == CellType.STRING) {
                     val asString = cell.stringCellValue
                     if (asString == durationName) {
                         durationIndexMaybe = c
@@ -57,7 +58,7 @@ fun calculateBalance(input: InputStream, inputName: String, durationName: String
             }
             val dateIndex = dateIndexMaybe
             val durationIndex = durationIndexMaybe
-            for (r: Int in (1..rowCount - 1)) {
+            for (r: Int in (1 until rowCount)) {
                 val row = sheet.getRow(r) ?: continue
                 val data = fetchDurationAndDate(row, dateIndex, durationIndex, inputName, sheetIndex, minYear)
                 if (data != null) {
@@ -122,26 +123,22 @@ fun fetchDurationAndDate(row: HSSFRow, dateIndex: Int, durationIndex: Int, input
     }
     val date: LocalDate
     val duration: Double
-    if (dateCell.cellTypeEnum == CellType.NUMERIC) {
-        val oldDate = dateCell.dateCellValue
-        val year = oldDate.year + 1900
-        val month = oldDate.month + 1
-        val day = oldDate.date
-        date = LocalDate.of(year, month, day)
+    if (dateCell.cellType == CellType.NUMERIC) {
+        date = dateCell.localDateTimeCellValue.toLocalDate()
         if (date.year < minYear) {
-            log.info { "Odd date ${date.toString()} encountered, will be ignored"}
+            log.info { "Odd date $date encountered, will be ignored"}
             return null
         }
     } else {
-        log.info { "${contextStart.invoke()} cell type of date column is ${dateCell.cellTypeEnum}" }
+        log.info { "${contextStart.invoke()} cell type of date column is ${dateCell.cellType}" }
         return null
     }
-    if (durationCell.cellTypeEnum == CellType.NUMERIC) {
+    if (durationCell.cellType == CellType.NUMERIC) {
         duration = durationCell.numericCellValue * 24
     } else {
-        log.info { "${contextStart.invoke()} cell type of duration column is ${durationCell.cellTypeEnum}" }
+        log.info { "${contextStart.invoke()} cell type of duration column is ${durationCell.cellType}" }
         return null
 
     }
-    return Pair(date, duration)
+    return date to duration
 }
